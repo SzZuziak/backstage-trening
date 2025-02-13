@@ -8,11 +8,20 @@ spec:
   type: service
   parameters:
     properties:
-      prTitle:
-        title: PR Title
+      appName:
+        title: Application Name
         type: string
-        description: Provide a title for the new pull request.
-    required: ["prTitle"]  
+        description: Provide a name of application.
+      repoUrl:
+        title: Application Url
+        type: string
+        description: Provide a url to application.
+      technology:
+        title: Technology
+        type: string
+        description: Select the technology stack for the project.
+        enum: ["Node.js", "Python", "Java"]
+    required: ["appName", "repoUrl", "technology"]  
   steps:
     - id: generate-files
       name: Generate Files
