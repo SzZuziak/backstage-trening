@@ -5,7 +5,6 @@ metadata:
   title: Test Template with PR
   description: A template that generates changes and opens a pull request using Backstage Scaffolder.
 spec:
-  owner: team@example.com
   type: service
   parameters:
     - name: prTitle
