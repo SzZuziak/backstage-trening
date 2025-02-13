@@ -7,11 +7,12 @@ metadata:
 spec:
   type: service
   parameters:
-    - name: prTitle
-      title: PR Title
-      description: Provide a title for the new pull request.
-      type: string
-      required: true
+    properties:
+      prTitle:
+        title: PR Title
+        type: string
+        description: Provide a title for the new pull request.
+    required: ["prTitle"]  
   steps:
     - id: generate-files
       name: Generate Files
