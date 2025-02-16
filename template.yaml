@@ -1,40 +1,169 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: pr-test
-  title: Test Template with PR
-  description: A template that generates changes and opens a pull request using Backstage Scaffolder.
+  name: microservice-template
+  title: Create New Microservice
+  description: Template for creating new microservices with various technology stacks
+  tags:
+    - recommended
+    - microservice
 spec:
   type: service
+  owner: backend-team
   parameters:
     properties:
       appName:
         title: Application Name
         type: string
-        description: Provide a name of application.
-      repoUrl:
-        title: Application Url
+        description: Provide a name for your microservice
+        pattern: ^[a-z0-9-]+$
+      description:
+        title: Description
         type: string
-        description: Provide a url to application.
+        description: A description of the microservice
       technology:
-        title: Technology
+        title: Technology Stack
         type: string
-        description: Select the technology stack for the project.
-        enum: ["Node.js", "Python", "Java"]
-    required: ["appName", "repoUrl", "technology"]  
+        description: Select the technology stack for the microservice
+        enum: ["Node.js", "Python", "Java", "Go"]
+      repoUrl:
+        title: Repository URL
+        type: string
+        description: URL of the Git repository
+      team:
+        title: Owner Team
+        type: string
+        description: Team that will own this service
+        enum: ["backend-team", "frontend-team", "devops-team"]
+    required: ["appName", "description", "technology", "repoUrl", "team"]
   steps:
-    - id: generate-files
-      name: Generate Files
-      action: cookiecutter
+    - id: template
+      name: Fetch Template
+      action: fetch:template
       input:
-        templatePath: ./template-files
+        url: ./templates/microservice
+        values:
+          name: ${{ parameters.appName }}
+          description: ${{ parameters.description }}
+          technology: ${{ parameters.technology }}
+          owner: ${{ parameters.team }}
+          
+    - id: generate-catalog
+      name: Generate Catalog Info
+      action: catalog:write
+      input:
+        entity:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.appName }}
+            description: ${{ parameters.description }}
+            annotations:
+              github.com/project-slug: ${{ parameters.repoUrl }}
+            tags:
+              - ${{ parameters.technology | lower }}
+              - microservice
+          spec:
+            type: service
+            lifecycle: production
+            owner: ${{ parameters.team }}
+            system: supercompany-platform
+            
     - id: publish
-      name: Publish to GitHub and Create PR
+      name: Publish to GitHub
       action: publish:github
       input:
-        repoUrl: https://github.com/your-org/your-repo
-        targetPath: "./"
-        commitMessage: "Add test changes via Backstage Scaffolder"
-        branchName: "pr-test-branch"
-        pullRequestTitle: "${{ parameters.prTitle }}"
-        pullRequestDescription: "Automatically generated pull request using Backstage Scaffolder."
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        protectDefaultBranch: true
+        repoVisibility: private
+        collaborators:
+          - team: ${{ parameters.team }}
+            access: maintain
+            
+    - id: register
+      name: Register Component
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ parameters.repoUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
+---
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: frontend-module-template
+  title: Create Frontend Module
+  description: Template for creating new frontend modules with React
+  tags:
+    - recommended
+    - frontend
+spec:
+  type: website
+  owner: frontend-team
+  parameters:
+    properties:
+      moduleName:
+        title: Module Name
+        type: string
+        description: Name of the frontend module
+        pattern: ^[a-z0-9-]+$
+      description:
+        title: Description
+        type: string
+        description: A description of the module
+      repoUrl:
+        title: Repository URL
+        type: string
+        description: URL of the Git repository
+    required: ["moduleName", "description", "repoUrl"]
+  steps:
+    - id: template
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./templates/frontend-module
+        values:
+          name: ${{ parameters.moduleName }}
+          description: ${{ parameters.description }}
+          
+    - id: generate-catalog
+      name: Generate Catalog Info
+      action: catalog:write
+      input:
+        entity:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.moduleName }}
+            description: ${{ parameters.description }}
+            annotations:
+              github.com/project-slug: ${{ parameters.repoUrl }}
+            tags:
+              - react
+              - frontend
+          spec:
+            type: website
+            lifecycle: production
+            owner: frontend-team
+            system: supercompany-platform
+            
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        protectDefaultBranch: true
+        repoVisibility: private
+        collaborators:
+          - team: frontend-team
+            access: maintain
+            
+    - id: register
+      name: Register Component
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ parameters.repoUrl }}
+        catalogInfoPath: "/catalog-info.yaml"
